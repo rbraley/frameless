@@ -16,6 +16,9 @@ lazy val core = project
   .settings(framelessSettings: _*)
   .settings(warnUnusedImport: _*)
   .settings(publishSettings: _*)
+  .settings(libraryDependencies ++= Seq(
+    "org.apache.spark" %% "spark-sql"  % sparkVersion % "provided"
+  ))
 
 lazy val cats = project
   .settings(name := "frameless-cats")

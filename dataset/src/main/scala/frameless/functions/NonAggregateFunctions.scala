@@ -22,9 +22,9 @@ trait NonAggregateFunctions {
     * apache/spark
     */
   def acos[A, T](column:TypedColumn[T,A])
-    (implicit evCanBeDouble: CatalystCast[A, Double]):TypedColumn[T,A] = {
+    (implicit evCanBeDouble: CatalystCast[A, Double]):TypedColumn[T,Double] = {
     implicit val c = column.uencoder
-    new TypedColumn[T,A](untyped.acos(column.cast[Double].untyped))
+    new TypedColumn[T,Double](untyped.acos(column.cast[Double].untyped))
   }
 
 

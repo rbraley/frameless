@@ -1,53 +1,88 @@
 package frameless
 package functions
 
-import java.sql.Date
-
 import frameless.functions.nonAggregate._
-import org.scalacheck.Prop._
 import org.apache.spark.sql.Encoder
+import org.scalacheck.Prop._
 
 class NonAggregateFunctionsTests extends TypedDatasetSuite {
 
+  val spark = session
+  import spark.implicits._
+
+
+
   test("add_months"){
-    val spark = session
-    import spark.implicits._
-    implicit val e = org.apache.spark.sql.Encoders.DATE
-
-
-    //add_months returns java.sql.Date due to the upCasting in ScalaReflection.upCastToExpectedType
-    //so we need appropriate converters from frameless internal date representation to java.sql.Date for proper testing.
-    abstract class ToJSQLDate[A:CatalystDateTime]{
-      def toJSQLDate(a:A):java.sql.Date
-    }
-
-    implicit object sqlDate extends ToJSQLDate[SQLDate] {
-      override def toJSQLDate(a: SQLDate): Date = org.apache.spark.sql.catalyst.util.DateTimeUtils.toJavaDate(a.days)
-    }
-
-    implicit object sqlTS extends ToJSQLDate[SQLTimestamp] {
-      override def toJSQLDate(a: SQLTimestamp): Date = new Date(org.apache.spark.sql.catalyst.util.DateTimeUtils.toJavaTimestamp(a.us).getTime)
-    }
-
-    def prop[A](tds: A, monthsToAdd: Int) (implicit encEv : Encoder[A], tEncEv:TypedEncoder[A], isDateType:CatalystDateTime[A], dateTimeEv: ToJSQLDate[A])= {
+    def prop[A: CatalystDateTime : TypedEncoder : Encoder](tds: A, monthsToAdd: Int) = {
       val cDS = session.createDataset(
-        List(tds).map(dateTimeEv.toJSQLDate)
+        List(tds).map(CatalystDateTime[A].toJavaSQLDate)
       ).toDF("ts")
       val resCompare:List[java.sql.Date] = cDS
         .select(org.apache.spark.sql.functions.add_months(cDS("ts"), monthsToAdd))
-        .map(
-          row => {
-            row.getAs[java.sql.Date](0)
-          }
-        ).collect().toList
+        .map(_.getAs[java.sql.Date](0))
+        .collect().toList
 
       val typedDS = TypedDataset.create(List(tds).map(X1(_)))
-      val res = typedDS.select(add_months(typedDS('a), monthsToAdd)).collect().run() //open Question: should this result in java.sql.Date or frameless.SQLDate?
-      resCompare ?= res.map(sqlDate.toJSQLDate).toList
+      val res = typedDS.select(add_months(typedDS('a), monthsToAdd)).collect().run()
+      resCompare ?= res.map(CatalystDateTime[SQLDate].toJavaSQLDate).toList
     }
 
 
     check(forAll(prop[SQLDate] _))
     check(forAll(prop[SQLTimestamp] _))
   }
+
+
+
+  test("abs") {
+
+    def prop[A: CatalystNumeric : TypedEncoder](value: A) (implicit encEv: Encoder[A]) = {
+      val cDS = session.createDataset(List(value))
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.abs(cDS("value")))
+        .map(_.getAs[A](0))
+        .collect().toList
+
+
+      val typedDS = TypedDataset.create(List(value).map(X1(_)))
+      val res = typedDS.select(abs(typedDS('a))).collect().run().toList
+
+      resCompare ?= res
+    }
+
+
+    check(forAll(prop[Int] _))
+    check(forAll(prop[Long] _))
+    check(forAll(prop[Short] _))
+    //check(forAll(prop[BigDecimal] _))
+    check(forAll(prop[Byte] _))
+    check(forAll(prop[Double] _))
+  }
+
+  test("acos") {
+    def prop[A: CatalystNumeric : TypedEncoder](value: A) (implicit encEv: Encoder[A]) = {
+      val cDS = session.createDataset(List(value))
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.acos(cDS("value")))
+        .map(_.getAs[Double](0))
+        .collect().toList
+
+
+      val typedDS = TypedDataset.create(List(value).map(X1(_)))
+      val res = typedDS.select(acos(typedDS('a))).collect().run().toList
+
+      resCompare ?= res
+    }
+
+
+    check(forAll(prop[Int] _))
+    check(forAll(prop[Long] _))
+    check(forAll(prop[Short] _))
+    check(forAll(prop[BigDecimal] _))
+    check(forAll(prop[Byte] _))
+    check(forAll(prop[Double] _))
+  }
+
+
+
 }
