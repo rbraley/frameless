@@ -32,9 +32,9 @@ trait NonAggregateFunctions {
     *
     * apache/spark
     */
-  def add_months[A: CatalystDateTime, T](column:TypedColumn[T,A], numMonths:Int):TypedColumn[T,A] ={
+  def add_months[A : CatalystDateTime, T](column:TypedColumn[T,A], numMonths:Int):TypedColumn[T,SQLDate] ={
     implicit val c = column.uencoder
-    new TypedColumn[T,A](untyped.add_months(column.untyped, numMonths))
+    new TypedColumn[T,SQLDate](untyped.add_months(column.untyped, numMonths))
   }
 
 
