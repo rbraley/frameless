@@ -3,7 +3,10 @@ package functions
 
 import frameless.functions.nonAggregate._
 import org.apache.spark.sql.Encoder
+import org.scalacheck.Gen
 import org.scalacheck.Prop._
+
+import scala.util.Random
 
 class NonAggregateFunctionsTests extends TypedDatasetSuite {
 
@@ -98,6 +101,44 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
     check(forAll(prop[BigDecimal] _))
     check(forAll(prop[Byte] _))
     check(forAll(prop[Double] _))
+  }
+
+
+  test("array_contains"){
+    val listLength = 10
+
+    val spark = session
+    import spark.implicits._
+
+    def prop(values: List[Int], shouldBeIn:Boolean) = {
+
+      val contained = if (shouldBeIn) values(Random.nextInt(listLength)) else -1
+
+      val cDS = session.createDataset(List(values))
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.array_contains(cDS("value"), contained))
+        .map(_.getAs[Boolean](0))
+        .collect().toList
+
+
+      val typedDS = TypedDataset.create(List(X1(values)))
+      val res = typedDS
+        .select(array_contains(typedDS('a), contained))
+        .collect()
+        .run()
+        .toList
+
+      resCompare ?= res
+    }
+
+
+    check(
+      forAll(
+        Gen.listOfN(listLength, Gen.choose(0,100)),
+        Gen.oneOf(true,false)
+      )
+      (prop)
+    )
   }
 
 

@@ -38,5 +38,15 @@ trait NonAggregateFunctions {
   }
 
 
+  /** Non-Aggregate function: returns true if value is contained with in the array in the specified column
+    *
+    * apache/spark
+    */
+  def array_contains[C[_] : CatalystCollection, A, T](column:TypedColumn[T, C[A]], value:A):TypedColumn[T,Boolean] = {
+    implicit val c = column.uencoder
+    new TypedColumn[T,Boolean](untyped.array_contains(column.untyped, value))
+  }
+
+
 
 }
