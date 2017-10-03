@@ -7,22 +7,21 @@ import org.scalacheck.Prop._
 
 class NonAggregateFunctionsTests extends TypedDatasetSuite {
 
-  val spark = session
-  import spark.implicits._
-
-
 
   test("add_months"){
-    def prop[A: CatalystDateTime : TypedEncoder : Encoder](tds: A, monthsToAdd: Int) = {
+    val spark = session
+    import spark.implicits._
+
+    def prop[A: CatalystDateTime : TypedEncoder : Encoder](tds: List[A], monthsToAdd: Int) = {
       val cDS = session.createDataset(
-        List(tds).map(CatalystDateTime[A].toJavaSQLDate)
+        tds.map(CatalystDateTime[A].toJavaSQLDate)
       ).toDF("ts")
       val resCompare:List[java.sql.Date] = cDS
         .select(org.apache.spark.sql.functions.add_months(cDS("ts"), monthsToAdd))
         .map(_.getAs[java.sql.Date](0))
         .collect().toList
 
-      val typedDS = TypedDataset.create(List(tds).map(X1(_)))
+      val typedDS = TypedDataset.create(tds.map(X1(_)))
       val res = typedDS.select(add_months(typedDS('a), monthsToAdd)).collect().run()
       resCompare ?= res.map(CatalystDateTime[SQLDate].toJavaSQLDate).toList
     }
@@ -35,17 +34,23 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
 
 
   test("abs") {
+    val spark = session
+    import spark.implicits._
 
-    def prop[A: CatalystNumeric : TypedEncoder](value: A) (implicit encEv: Encoder[A]) = {
-      val cDS = session.createDataset(List(value))
+    def prop[A: CatalystNumeric : TypedEncoder : Encoder](value: List[A])= {
+      val cDS = session.createDataset(value)
       val resCompare = cDS
         .select(org.apache.spark.sql.functions.abs(cDS("value")))
         .map(_.getAs[A](0))
         .collect().toList
 
 
-      val typedDS = TypedDataset.create(List(value).map(X1(_)))
-      val res = typedDS.select(abs(typedDS('a))).collect().run().toList
+      val typedDS = TypedDataset.create(value.map(X1(_)))
+      val res = typedDS
+        .select(abs(typedDS('a)))
+        .collect()
+        .run()
+        .toList
 
       resCompare ?= res
     }
@@ -54,22 +59,34 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
     check(forAll(prop[Int] _))
     check(forAll(prop[Long] _))
     check(forAll(prop[Short] _))
-    //check(forAll(prop[BigDecimal] _))
+    //check(forAll(prop[BigDecimal] _)) untyped abs implementation will convert this to java.math.BigDecimal which results in class cast exceptions.
     check(forAll(prop[Byte] _))
     check(forAll(prop[Double] _))
   }
 
   test("acos") {
-    def prop[A: CatalystNumeric : TypedEncoder](value: A) (implicit encEv: Encoder[A]) = {
-      val cDS = session.createDataset(List(value))
+    //this has to be in each test case. if it is put on the class definition there will be magical null pointer exceptions.
+    //this renaming is also necessary or there will be errors. This needs someone smarter than me to figure out.
+    val spark = session
+    import spark.implicits._
+
+    def prop[A: CatalystNumeric : TypedEncoder : Encoder](value: List[A]) = {
+      val cDS = session.createDataset(value)
       val resCompare = cDS
         .select(org.apache.spark.sql.functions.acos(cDS("value")))
         .map(_.getAs[Double](0))
+        .map(DoubleBehaviourUtils.nanNullHandler)
         .collect().toList
 
 
-      val typedDS = TypedDataset.create(List(value).map(X1(_)))
-      val res = typedDS.select(acos(typedDS('a))).collect().run().toList
+      val typedDS = TypedDataset.create(value.map(X1(_)))
+      val res = typedDS
+        .select(acos(typedDS('a)))
+        .deserialized
+        .map(DoubleBehaviourUtils.nanNullHandler)
+        .collect()
+        .run()
+        .toList
 
       resCompare ?= res
     }
