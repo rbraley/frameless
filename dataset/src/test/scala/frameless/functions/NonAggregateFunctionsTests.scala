@@ -3,10 +3,9 @@ package functions
 
 import frameless.functions.nonAggregate._
 import org.apache.spark.sql.Encoder
+import TypedEncoderBinaryType._
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
-
-import scala.util.Random
 
 class NonAggregateFunctionsTests extends TypedDatasetSuite {
 
@@ -68,8 +67,6 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
   }
 
   test("acos") {
-    //this has to be in each test case. if it is put on the class definition there will be magical null pointer exceptions.
-    //this renaming is also necessary or there will be errors. This needs someone smarter than me to figure out.
     val spark = session
     import spark.implicits._
 
@@ -105,14 +102,17 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
 
 
   test("array_contains"){
-    val listLength = 10
+
 
     val spark = session
     import spark.implicits._
 
+    val listLength = 10
+    val idxs = Stream.continually(Range(0, listLength)).flatten.toIterator
+
     def prop(values: List[Int], shouldBeIn:Boolean) = {
 
-      val contained = if (shouldBeIn) values(Random.nextInt(listLength)) else -1
+      val contained = if (shouldBeIn) values(idxs.next) else -1
 
       val cDS = session.createDataset(List(values))
       val resCompare = cDS
@@ -139,6 +139,228 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
       )
       (prop)
     )
+  }
+
+  test("ascii"){
+    val spark = session
+    import spark.implicits._
+
+    def prop(values:List[String]) = {
+      val cDS = session.createDataset(values)
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.ascii(cDS("value")))
+        .map(_.getAs[Int](0))
+        .collect().toList
+
+      val typedDS = TypedDataset.create(values.map(X1(_)))
+      val res = typedDS
+        .select(ascii(typedDS('a)))
+        .collect()
+        .run()
+        .toList
+
+      resCompare ?= res
+    }
+
+    check(forAll(prop _))
+  }
+
+
+  test("atan") {
+    val spark = session
+    import spark.implicits._
+
+    def prop[A: CatalystNumeric : TypedEncoder : Encoder](value: List[A]) = {
+      val cDS = session.createDataset(value)
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.atan(cDS("value")))
+        .map(_.getAs[Double](0))
+        .map(DoubleBehaviourUtils.nanNullHandler)
+        .collect().toList
+
+
+      val typedDS = TypedDataset.create(value.map(X1(_)))
+      val res = typedDS
+        .select(atan(typedDS('a)))
+        .deserialized
+        .map(DoubleBehaviourUtils.nanNullHandler)
+        .collect()
+        .run()
+        .toList
+
+      resCompare ?= res
+    }
+
+
+    check(forAll(prop[Int] _))
+    check(forAll(prop[Long] _))
+    check(forAll(prop[Short] _))
+    check(forAll(prop[BigDecimal] _))
+    check(forAll(prop[Byte] _))
+    check(forAll(prop[Double] _))
+  }
+
+  test("asin") {
+    val spark = session
+    import spark.implicits._
+
+    def prop[A: CatalystNumeric : TypedEncoder : Encoder](value: List[A]) = {
+      val cDS = session.createDataset(value)
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.asin(cDS("value")))
+        .map(_.getAs[Double](0))
+        .map(DoubleBehaviourUtils.nanNullHandler)
+        .collect().toList
+
+
+      val typedDS = TypedDataset.create(value.map(X1(_)))
+      val res = typedDS
+        .select(asin(typedDS('a)))
+        .deserialized
+        .map(DoubleBehaviourUtils.nanNullHandler)
+        .collect()
+        .run()
+        .toList
+
+      resCompare ?= res
+    }
+
+
+    check(forAll(prop[Int] _))
+    check(forAll(prop[Long] _))
+    check(forAll(prop[Short] _))
+    check(forAll(prop[BigDecimal] _))
+    check(forAll(prop[Byte] _))
+    check(forAll(prop[Double] _))
+  }
+
+  test("atan2") {
+    val spark = session
+    import spark.implicits._
+
+    def prop[A: CatalystNumeric : TypedEncoder : Encoder, B: CatalystNumeric : TypedEncoder : Encoder](value: List[X2[A,B]])
+            (implicit encEv: Encoder[X2[A,B]]) = {
+      val cDS = session.createDataset(value)
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.atan2(cDS("a"), cDS("b")))
+        .map(_.getAs[Double](0))
+        .map(DoubleBehaviourUtils.nanNullHandler)
+        .collect().toList
+
+
+      val typedDS = TypedDataset.create(value)
+      val res = typedDS
+        .select(atan2(typedDS('a), typedDS('b)))
+        .deserialized
+        .map(DoubleBehaviourUtils.nanNullHandler)
+        .collect()
+        .run()
+        .toList
+
+      resCompare ?= res
+    }
+
+
+    check(forAll(prop[Int, Long] _))
+    check(forAll(prop[Long, Int] _))
+    check(forAll(prop[Short, Byte] _))
+    check(forAll(prop[BigDecimal, Double] _))
+    check(forAll(prop[Byte, Int] _))
+    check(forAll(prop[Double, Double] _))
+  }
+
+  test("atan2LitLeft") {
+    val spark = session
+    import spark.implicits._
+
+    def prop[A: CatalystNumeric : TypedEncoder : Encoder](value: List[A], lit:Double) = {
+      val cDS = session.createDataset(value)
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.atan2(lit, cDS("value")))
+        .map(_.getAs[Double](0))
+        .map(DoubleBehaviourUtils.nanNullHandler)
+        .collect().toList
+
+
+      val typedDS = TypedDataset.create(value.map(X1(_)))
+      val res = typedDS
+        .select(atan2(lit, typedDS('a)))
+        .deserialized
+        .map(DoubleBehaviourUtils.nanNullHandler)
+        .collect()
+        .run()
+        .toList
+
+      resCompare ?= res
+    }
+
+
+    check(forAll(prop[Int] _))
+    check(forAll(prop[Long] _))
+    check(forAll(prop[Short] _))
+    check(forAll(prop[BigDecimal] _))
+    check(forAll(prop[Byte] _))
+    check(forAll(prop[Double] _))
+  }
+
+  test("atan2LitRight") {
+    val spark = session
+    import spark.implicits._
+
+    def prop[A: CatalystNumeric : TypedEncoder : Encoder](value: List[A], lit:Double) = {
+      val cDS = session.createDataset(value)
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.atan2(cDS("value"), lit))
+        .map(_.getAs[Double](0))
+        .map(DoubleBehaviourUtils.nanNullHandler)
+        .collect().toList
+
+
+      val typedDS = TypedDataset.create(value.map(X1(_)))
+      val res = typedDS
+        .select(atan2(typedDS('a), lit))
+        .deserialized
+        .map(DoubleBehaviourUtils.nanNullHandler)
+        .collect()
+        .run()
+        .toList
+
+      resCompare ?= res
+    }
+
+
+    check(forAll(prop[Int] _))
+    check(forAll(prop[Long] _))
+    check(forAll(prop[Short] _))
+    check(forAll(prop[BigDecimal] _))
+    check(forAll(prop[Byte] _))
+    check(forAll(prop[Double] _))
+  }
+
+  test("base64") {
+    val spark = session
+    import spark.implicits._
+
+
+
+    def prop(values:List[Array[Byte]]) = {
+      val cDS = session.createDataset(values)
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.base64(cDS("value")))
+        .map(_.getAs[String](0))
+        .collect().toList
+
+      val typedDS = TypedDataset.create(values.map(X1(_)))
+      val res = typedDS
+        .select(base64(typedDS('a)))
+        .collect()
+        .run()
+        .toList
+
+      resCompare ?= res
+    }
+
+    check(forAll(prop _))
   }
 
 
