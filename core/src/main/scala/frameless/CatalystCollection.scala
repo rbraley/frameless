@@ -7,5 +7,4 @@ object CatalystCollection {
   implicit object seqObject extends CatalystCollection[Seq]
   implicit object listObject extends CatalystCollection[List]
   implicit object vectorObject extends CatalystCollection[Vector]
-  implicit object setObject extends CatalystCollection[Set]
 }

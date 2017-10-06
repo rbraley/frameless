@@ -110,9 +110,39 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
     val listLength = 10
     val idxs = Stream.continually(Range(0, listLength)).flatten.toIterator
 
-    def prop(values: List[Int], shouldBeIn:Boolean) = {
+    abstract class Nth[A, C[A]:CatalystCollection] {
 
-      val contained = if (shouldBeIn) values(idxs.next) else -1
+      def nth(c:C[A], idx:Int):A
+    }
+
+    implicit def deriveListNth[A] : Nth[A, List] = new Nth[A, List] {
+      override def nth(c: List[A], idx: Int): A = c(idx)
+    }
+
+    implicit def deriveSeqNth[A] : Nth[A, Seq] = new Nth[A, Seq] {
+      override def nth(c: Seq[A], idx: Int): A = c(idx)
+    }
+
+    implicit def deriveVectorNth[A] : Nth[A, Vector] = new Nth[A, Vector] {
+      override def nth(c: Vector[A], idx: Int): A = c(idx)
+    }
+
+    implicit def deriveArrayNth[A] : Nth[A, Array] = new Nth[A, Array] {
+      override def nth(c: Array[A], idx: Int): A = c(idx)
+    }
+
+
+    def prop[C[_] : CatalystCollection]
+      (
+        values: C[Int],
+        shouldBeIn:Boolean)
+      (
+        implicit nth:Nth[Int, C],
+        encEv: Encoder[C[Int]],
+        tEncEv: TypedEncoder[C[Int]]
+      ) = {
+
+      val contained = if (shouldBeIn) nth.nth(values, idxs.next) else -1
 
       val cDS = session.createDataset(List(values))
       val resCompare = cDS
@@ -137,7 +167,31 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         Gen.listOfN(listLength, Gen.choose(0,100)),
         Gen.oneOf(true,false)
       )
-      (prop)
+      (prop[List])
+    )
+
+    /*check( Looks like there is no Typed Encoder for Seq type yet
+      forAll(
+        Gen.listOfN(listLength, Gen.choose(0,100)),
+        Gen.oneOf(true,false)
+      )
+      (prop[Seq])
+    )*/
+
+    check(
+      forAll(
+        Gen.listOfN(listLength, Gen.choose(0,100)).map(_.toVector),
+        Gen.oneOf(true,false)
+      )
+      (prop[Vector])
+    )
+
+    check(
+      forAll(
+        Gen.listOfN(listLength, Gen.choose(0,100)).map(_.toArray),
+        Gen.oneOf(true,false)
+      )
+      (prop[Array])
     )
   }
 
