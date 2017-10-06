@@ -25,7 +25,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
 
       val typedDS = TypedDataset.create(tds.map(X1(_)))
       val res = typedDS.select(add_months(typedDS('a), monthsToAdd)).collect().run()
-      resCompare ?= res.map(CatalystDateTime[SQLDate].toJavaSQLDate).toList
+      res.map(CatalystDateTime[SQLDate].toJavaSQLDate).toList ?= resCompare
     }
 
     check(forAll(prop[SQLDate] _))
@@ -53,7 +53,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
 
@@ -87,7 +87,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
 
@@ -164,7 +164,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
 
@@ -219,7 +219,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
     check(forAll(prop _))
@@ -248,7 +248,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
 
@@ -282,7 +282,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
 
@@ -317,7 +317,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
 
@@ -351,7 +351,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
 
@@ -385,7 +385,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
 
@@ -415,7 +415,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
     check(forAll(prop _))
@@ -439,7 +439,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
     check(forAll(prop _))
@@ -464,7 +464,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
         .run()
         .toList
 
-      resCompare ?= res
+      res ?= resCompare
     }
 
     check(forAll(prop[Long] _))
