@@ -238,7 +238,7 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
     val spark = session
     import spark.implicits._
 
-    def prop[A: CatalystNumeric : TypedEncoder : Encoder, B: CatalystNumeric : TypedEncoder : Encoder](value: List[X2[A,B]])
+    def prop[A: CatalystNumeric : TypedEncoder : Encoder, B: CatalystNumeric : TypedEncoder : Encoder](value: List[X2[A, B]])
             (implicit encEv: Encoder[X2[A,B]]) = {
       val cDS = session.createDataset(value)
       val resCompare = cDS
@@ -341,8 +341,6 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
     val spark = session
     import spark.implicits._
 
-
-
     def prop(values:List[Array[Byte]]) = {
       val cDS = session.createDataset(values)
       val resCompare = cDS
@@ -363,6 +361,56 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
     check(forAll(prop _))
   }
 
+  test("bin"){
+    val spark = session
+    import spark.implicits._
 
+    def prop(values:List[Long]) = {
+      val cDS = session.createDataset(values)
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.bin(cDS("value")))
+        .map(_.getAs[String](0))
+        .collect().toList
+
+      val typedDS = TypedDataset.create(values.map(X1(_)))
+      val res = typedDS
+        .select(bin(typedDS('a)))
+        .collect()
+        .run()
+        .toList
+
+      resCompare ?= res
+    }
+
+    check(forAll(prop _))
+  }
+
+
+  test("bitwiseNOT"){
+    val spark = session
+    import spark.implicits._
+
+    def prop[A: CatalystBitwise : TypedEncoder : Encoder](values:List[A]) = {
+      val cDS = session.createDataset(values)
+      val resCompare = cDS
+        .select(org.apache.spark.sql.functions.bitwiseNOT(cDS("value")))
+        .map(_.getAs[A](0))
+        .collect().toList
+
+      val typedDS = TypedDataset.create(values.map(X1(_)))
+      val res = typedDS
+        .select(bitwiseNOT(typedDS('a)))
+        .collect()
+        .run()
+        .toList
+
+      resCompare ?= res
+    }
+
+    check(forAll(prop[Long] _))
+    check(forAll(prop[Short] _))
+    check(forAll(prop[Byte] _))
+    check(forAll(prop[Int] _))
+  }
 
 }
