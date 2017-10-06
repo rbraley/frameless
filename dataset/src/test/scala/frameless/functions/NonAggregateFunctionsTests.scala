@@ -28,7 +28,6 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
       resCompare ?= res.map(CatalystDateTime[SQLDate].toJavaSQLDate).toList
     }
 
-
     check(forAll(prop[SQLDate] _))
     check(forAll(prop[SQLTimestamp] _))
   }
@@ -101,6 +100,13 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
   }
 
 
+  /**
+    * Currently not all Collection types play nice with the Encoders.
+    * This test needs to be readressed and Set readded to the Collection Typeclass once these issues are resolved.
+    *
+    * [[https://issues.apache.org/jira/browse/SPARK-18891]]
+    * [[https://issues.apache.org/jira/browse/SPARK-21204]]
+    */
   test("array_contains"){
 
 
