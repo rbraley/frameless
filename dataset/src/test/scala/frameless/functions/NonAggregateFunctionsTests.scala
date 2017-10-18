@@ -3,7 +3,6 @@ package functions
 
 import frameless.functions.nonAggregate._
 import org.apache.spark.sql.Encoder
-import TypedEncoderBinaryType._
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
 
