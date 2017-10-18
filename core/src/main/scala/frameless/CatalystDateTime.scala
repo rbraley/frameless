@@ -20,7 +20,7 @@ object CatalystDateTime{
     override def toJavaSQLDate(a: SQLDate): Date = toJavaDate(a.days)
   }
   implicit object sqlTimeStamp extends CatalystDateTime[SQLTimestamp] {
-    override def toJavaSQLDate(a: SQLTimestamp): Date = new Date(toJavaTimestamp(a.us).getTime)
+    override def toJavaSQLDate(a: SQLTimestamp): Date = toJavaDate(millisToDays(toJavaTimestamp(a.us).getTime))
   }
 
 }
