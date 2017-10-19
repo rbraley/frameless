@@ -38,8 +38,10 @@ object CatalystCast {
   // implicit object stringToLong extends CatalystCast[String, Option[Long]]
   // implicit object stringToSqlDate extends CatalystCast[String, Option[SQLDate]]
 
+
+  implicit def framelessDateTimeToSQLDate [A: CatalystDateTime]: CatalystCast[A, SQLDate] = of[A, SQLDate]
   // needs verification:
-  // implicit object sqlTimestampToSqlDate extends CatalystCast[SQLTimestamp, SQLDate]
+  //implicit object sqlTimestampToSqlDate extends CatalystCast[SQLTimestamp, SQLDate]
 
   // needs verification:
   // implicit object sqlTimestampToDecimal extends CatalystCast[SQLTimestamp, BigDecimal]

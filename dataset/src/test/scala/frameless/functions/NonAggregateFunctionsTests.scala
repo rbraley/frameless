@@ -13,7 +13,10 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
     val spark = session
     import spark.implicits._
 
-    def prop[A: CatalystDateTime : TypedEncoder : Encoder](tds: List[A], monthsToAdd: Int) = {
+    def prop[A: CatalystDateTime : TypedEncoder : Encoder]
+    (tds: List[A], monthsToAdd: Int)
+    (implicit canCastSQLDate: CatalystCast[A, SQLDate])
+    = {
       val cDS = session.createDataset(
         tds.map(CatalystDateTime[A].toJavaSQLDate)
       ).toDF("ts")
