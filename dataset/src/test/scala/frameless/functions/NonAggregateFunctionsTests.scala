@@ -3,6 +3,8 @@ package functions
 
 import frameless.functions.nonAggregate._
 import org.apache.spark.sql.Encoder
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
+//import org.apache.spark.sql.types.DateType
 import org.scalacheck.Gen
 import org.scalacheck.Prop._
 
@@ -20,14 +22,16 @@ class NonAggregateFunctionsTests extends TypedDatasetSuite {
       val cDS = session.createDataset(
         tds.map(CatalystDateTime[A].toJavaSQLDate)
       ).toDF("ts")
-      val resCompare:List[java.sql.Date] = cDS
+      val resCompare = cDS
         .select(org.apache.spark.sql.functions.add_months(cDS("ts"), monthsToAdd))
         .map(_.getAs[java.sql.Date](0))
+        .map(DateTimeUtils.fromJavaDate)
+        .map(d => {SQLDate(d)})
         .collect().toList
 
       val typedDS = TypedDataset.create(tds.map(X1(_)))
-      val res = typedDS.select(add_months(typedDS('a), monthsToAdd)).collect().run()
-      res.map(CatalystDateTime[SQLDate].toJavaSQLDate).toList ?= resCompare
+      val res= typedDS.select(add_months(typedDS('a), monthsToAdd)).collect().run()
+      res.toList ?= resCompare
     }
 
     check(forAll(prop[SQLDate] _))
