@@ -417,7 +417,7 @@ sealed class TypedAggregate[T, U](val expr: Expression)(
 object TypedColumn {
 
   implicit class TypedCollectionColumn[T,U[_]: CatalystCollection,X:TypedEncoder](col:TypedColumn[T,U[X]]){
-    def getItem(itemIndex: Int): TypedColumn[T, X] = col.untyped.getItem(itemIndex).typed
+    def getItem(itemIndex: Int): TypedColumn[T, Option[X]] = col.untyped.getItem(itemIndex).typedOpt
   }
 
   /**

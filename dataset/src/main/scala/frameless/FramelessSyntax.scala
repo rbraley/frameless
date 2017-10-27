@@ -5,6 +5,7 @@ import org.apache.spark.sql.{Column, DataFrame, Dataset}
 trait FramelessSyntax {
   implicit class ColumnSyntax(self: Column) {
     def typed[T, U: TypedEncoder]: TypedColumn[T, U] = new TypedColumn[T, U](self)
+    def typedOpt[T, U: TypedEncoder]: TypedColumn[T, Option[U]] = new TypedColumn[T, Option[U]](self)
   }
 
   implicit class DatasetSyntax[T: TypedEncoder](self: Dataset[T]) {

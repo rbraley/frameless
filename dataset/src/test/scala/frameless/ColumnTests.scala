@@ -1,9 +1,10 @@
 package frameless
 
-import org.scalacheck.Prop
+import org.scalacheck.{Gen, Prop}
 import org.scalacheck.Prop._
 
 import scala.math.Ordering.Implicits._
+import scala.util.Try
 
 class ColumnTests extends TypedDatasetSuite {
 
@@ -45,10 +46,30 @@ class ColumnTests extends TypedDatasetSuite {
   }
 
   test("getItemSimple") {
-    import TypedColumn._
-    val ds: TypedDataset[X1[List[Int]]] = TypedDataset.create(X1(List(1,2,3)) :: X1(List(3,2,1)) :: Nil)
-    val col: TypedColumn[X1[List[Int]], List[Int]] = ds('a)
-    val newDS: TypedDataset[Int] = ds.select(col.getItem(2))
-    println(newDS.collect().run())
+    case class ListsAndIndexOutOfBounds[A](xss: List[List[A]], index: Int)
+
+    def prop[A : TypedEncoder ](both: ListsAndIndexOutOfBounds[A]) = {
+      import TypedColumn._
+
+      val ListsAndIndexOutOfBounds(value, index) = both
+      val itemsAtIndex: List[Option[A]] = value.map(xs => Try(xs.apply(index)).toOption)
+      val ds: TypedDataset[X1[List[A]]] = TypedDataset.create(value.map(X1.apply))
+      val col: TypedColumn[X1[List[A]], List[A]] = ds('a)
+      val newDS  = ds.select(col.getItem(index))
+      val (nones,somes) = itemsAtIndex.span(_.isEmpty)
+      println(s"nones: ${nones.length}\t somes: ${somes.length}")
+      itemsAtIndex ?= newDS.collect().run().toList
+    }
+
+    def myGen[T](implicit gen: Gen[T]) = for {
+      size <- Gen.choose(0,20)
+      offset <- Gen.choose(0, 10)
+      index <- Gen.choose(0, size + 20)
+      xss <- Gen.listOf(Gen.listOfN(size + offset , gen))
+    } yield ListsAndIndexOutOfBounds(xss, index)
+
+    check(forAll(myGen[Int](Gen.choose(0,10)))(prop[Int] _))
   }
+
+
 }
