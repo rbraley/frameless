@@ -382,16 +382,17 @@ sealed class TypedColumn[T, U](
     */
   def ^(u: TypedColumn[T, U])(implicit n: CatalystBitwise[U]): TypedColumn[T, U] = bitwiseXOR(u)
 
+
   def getField[A](column: Witness.Lt[Symbol])(
     implicit
     exists: TypedColumn.Exists[T, column.T, A],
     encoder: TypedEncoder[A]
   ): TypedColumn[T, A] = self.untyped.getField(column.value.name).typed
 
-  def getItem[A](column: Witness.Lt[Symbol])(
-  implicit
-  exists: TypedColumn.Exists[T, column.T, A],
-  encoder: TypedEncoder[A]
+  def getItem[A: TypedEncoder](column: Witness.Lt[Symbol])(
+      implicit
+      exists: TypedColumn.Exists[T, column.T, A],
+      evCollection: CatalystCollection[T]
   ): TypedColumn[T, A] = self.untyped.getItem(column.value.name).typed
   /** Casts the column to a different type.
     * {{{
