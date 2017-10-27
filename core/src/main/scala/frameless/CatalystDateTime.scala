@@ -2,6 +2,8 @@ package frameless
 
 
 import java.sql.Date
+
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.util.DateTimeUtils._
 
 trait CatalystDateTime[A] {
@@ -20,7 +22,7 @@ object CatalystDateTime{
     override def toJavaSQLDate(a: SQLDate): Date = toJavaDate(a.days)
   }
   implicit object sqlTimeStamp extends CatalystDateTime[SQLTimestamp] {
-    override def toJavaSQLDate(a: SQLTimestamp): Date = toJavaDate(millisToDays(toJavaTimestamp(a.us).getTime))
+    override def toJavaSQLDate(a: SQLTimestamp): Date = toJavaDate(DateTimeUtils.millisToDays(a.us / 1000L))
   }
 
 }
