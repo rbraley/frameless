@@ -2,7 +2,7 @@ package frameless
 
 import scala.annotation.implicitNotFound
 
-@implicitNotFound("Cannot do collection operations on columns of type ${A}.")
+@implicitNotFound("Cannot do collection operations on columns of type ${C}.")
 trait CatalystCollection[C[_]]
 
 object CatalystCollection {

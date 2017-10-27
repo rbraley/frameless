@@ -389,11 +389,7 @@ sealed class TypedColumn[T, U](
     encoder: TypedEncoder[A]
   ): TypedColumn[T, A] = self.untyped.getField(column.value.name).typed
 
-  def getItem[A: TypedEncoder](column: Witness.Lt[Symbol])(
-      implicit
-      exists: TypedColumn.Exists[T, column.T, A],
-      evCollection: CatalystCollection[T]
-  ): TypedColumn[T, A] = self.untyped.getItem(column.value.name).typed
+
   /** Casts the column to a different type.
     * {{{
     *   df.select(df('a).cast[Int])
@@ -419,6 +415,11 @@ sealed class TypedAggregate[T, U](val expr: Expression)(
 }
 
 object TypedColumn {
+
+  implicit class TypedCollectionColumn[T,U[_]: CatalystCollection,X:TypedEncoder](col:TypedColumn[T,U[X]]){
+    def getItem(itemIndex: Int): TypedColumn[T, X] = col.untyped.getItem(itemIndex).typed
+  }
+
   /**
     * Evidence that type `T` has column `K` with type `V`.
     */

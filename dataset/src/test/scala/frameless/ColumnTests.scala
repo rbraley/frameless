@@ -43,4 +43,12 @@ class ColumnTests extends TypedDatasetSuite {
     val t = TypedDataset.create((1,2)::Nil)
     t('_1).toString ?= t.dataset.col("_1").toString()
   }
+
+  test("getItemSimple") {
+    import TypedColumn._
+    val ds: TypedDataset[X1[List[Int]]] = TypedDataset.create(X1(List(1,2,3)) :: X1(List(3,2,1)) :: Nil)
+    val col: TypedColumn[X1[List[Int]], List[Int]] = ds('a)
+    val newDS: TypedDataset[Int] = ds.select(col.getItem(2))
+    println(newDS.collect().run())
+  }
 }
